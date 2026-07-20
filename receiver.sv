@@ -47,12 +47,15 @@ always @(posedge clk) begin
                     baud_counter <= baud_counter + 1'b1;
                 end
                 else if (baud_counter == 5208) begin
-                    if (rx == 0)
-                            state <= DATA;
-                        else begin
-                            state <= IDLE;
-                            baud_counter <= 0;
-                        end
+                    if (rx == 0) begin
+                        state <= DATA;
+                        baud_counter <= 0;
+                        bit_index <= 0;
+                    end
+                    else begin
+                        state <= IDLE;
+                        baud_counter <= 0;
+                    end
                 end
             end
             DATA: begin 
@@ -71,9 +74,11 @@ always @(posedge clk) begin
                     if (rx == 1) begin
                         dataout <= data_reg;
                         data_valid <= 1'b1;
-                        error <= 0;
-                    end else
-                        error <= 1;
+                        error <= 1'b0;
+                    end 
+                    else begin
+                        error <= 1'b1;
+                    end
                  state <= IDLE;
                  end   
             end 
