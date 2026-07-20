@@ -89,3 +89,16 @@ Pentru simulare a fost ales caracterul 0xA5; testbench-ul construiește manual c
 Durata fiecărui bit este stabilită prin întârzieri calculate astfel încât să corespundă perioadei unui bit la 9600 baud, iar semnalul tick este generat periodic pentru a sincroniza eșantionarea biților de către receptor.
 
 În timpul realizării testbench-ului a fost întâmpinată o problemă: sincronizarea dintre semnalul tick și semnalul serial rx_serial. În versiunea inițială a testbench-ului, aceste semnale erau generate independent, ceea ce putea determina apariția unui impuls tick într-un moment în care valoarea de pe linia serială nu corespundea bitului care trebuia recepționat. Deoarece modulul receiver preia valoarea semnalului rx numai atunci când tick este activ, o astfel de desincronizare conducea la citirea unor biți greșiți și, implicit, la reconstruirea incorectă a octetului transmis. ( în loc de transmiterea grupului "A5" am obținut "D2" )
+
+# Modulul tb_transmitter
+
+Pentru verificarea funcționării modulului UART Transmitter a fost realizat un testbench dedicat, al cărui scop este simularea procesului de transmitere a unui octet prin interfața serială UART și validarea comportamentului mașinii de stări implementate.
+Testbench-ul generează semnalul de ceas (clk), semnalul de reset (reset), impulsurile de sincronizare (tick), octetul de date care urmează să fie transmis (datain) și semnalul data_valid, utilizat pentru inițierea transmisiei. În urma procesării acestor semnale, este urmărit semnalul serial de ieșire tx, precum și semnalul tx_done, care indică finalizarea transmiterii cadrului UART.
+Pentru simulare a fost ales același caracter (0xA5). Testbench-ul aplică acest octet la intrarea datain și activează semnalul data_valid, simulând astfel solicitarea transmiterii unui nou caracter. Modulul transmitter preia valoarea octetului și o memorează în registrul intern data_reg, după care începe transmiterea cadrului UART.
+Transmiterea este realizată conform structurii standard a unui cadru UART:
+- în starea de repaus (IDLE), linia tx este menținută la nivel logic HIGH
+- activarea semnalului data_valid determină preluarea octetului de date și inițierea transmisiei
+- în starea START, linia tx este adusă la nivel logic LOW pentru transmiterea bitului de start
+- în starea DATA, cei opt biți ai octetului sunt transmiși succesiv în ordinea LSB First, începând cu data_reg[0] și terminând cu data_reg[7]
+- în starea STOP, linia tx este readusă la nivel logic HIGH pentru transmiterea bitului de stop
+- la finalul cadrului, semnalul tx_done este activat pentru a indica finalizarea transmisiei, iar modulul revine în starea IDLE
