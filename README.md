@@ -133,3 +133,24 @@ stop bits: 1
 flow control: None
 
 Prin intermediul aplicației PuTTY, caracterele introduse de la tastatură sunt transmise către placa FPGA prin interfața UART. Modulul receiver recepționează caracterele, iar modulul transmitter le retransmite către calculator.
+
+
+# Etapa 2 — Logger interactiv cu counter binar 
+Porniți de la Etapa 1 funcțională și integrați counter-ul binar din proiectul anterior. FPGA-ul devine un dispozitiv care raportează pe terminal tot ce face și acceptă comenzi de la tastatură. Pe lângă comunicația cu PC-ul, apăsarea butoanelor fizice trebuie de asemenea raportată automat pe terminal. 
+
+Module noi necesare:
+- modul care trimite un mesaj
+- modul care transformă valoarea pe 16 biți a counter-ului într-o reprezentare hexazecimală
+- modul interpretor de comenzi
+
+În această etapă apare problema faptului că UART Transmitter poate transmite un singur caracter la un moment dat. La 9600 baud, un cadru UART format din 10 biți necesită aproximativ 1,04 ms. Prin urmare, un mesaj format din mai multe caractere poate necesita câteva zeci de milisecunde pentru a fi transmis complet. Dacă sistemul nu are un mecanism de stocare temporară, comenzile sau mesajele noi pot fi pierdute, deci este necesară implementarea unui modul FIFO.
+
+Un alt aspect care trebuie stabilit în arhitectura Etapei 2 este modul în care sunt tratate comenzile simultane provenite din surse diferite ( comandă de la tastatură sau apăsare de buton ).
+În acest caz, trebuie stabilit:
+- Care acțiune are prioritate?
+- Are prioritate comanda primită prin UART?
+- Are prioritate apăsarea butonului?
+- Sunt executate ambele comenzi?
+- Este posibilă evitarea apariției simultane printr-un mecanism de control?
+
+O soluție posibilă este utilizarea unui mecanism de arbitrare care acceptă un singur eveniment pe ciclu de procesare, iar celelalte evenimente sunt fie ignorate, fie stocate într-un FIFO pentru procesare ulterioară.
