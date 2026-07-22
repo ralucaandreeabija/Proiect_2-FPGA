@@ -1,6 +1,10 @@
 `timescale 1ns / 1ps
 
-module top_uart(
+module top_uart #(
+    parameter integer CLK_FREQ  = 100_000_000,
+    parameter integer BAUD_RATE = 9600,
+    parameter integer DATA_BITS = 8
+)(
     input logic clk,
     input logic reset,
     input logic rx,
@@ -8,16 +12,23 @@ module top_uart(
     );
     
     logic tick;
-    logic [7:0] received_data;
+    logic [DATA_BITS - 1:0] received_data;
     logic data_valid;
     logic tx_done;
 
-    baudrate_generator baud_gen(
+    baudrate_generator #(
+        .CLK_FREQ(CLK_FREQ),
+        .BAUD_RATE(BAUD_RATE)
+    )baud_gen(
         .clk(clk),
         .tick(tick)
     );
 
-    receiver uart_receiver(
+    receiver #(
+        .CLK_FREQ(CLK_FREQ),
+        .BAUD_RATE(BAUD_RATE),
+        .DATA_BITS(DATA_BITS)
+    )uart_receiver(
         .clk(clk),
         .reset(reset),
         .rx(rx),
@@ -26,7 +37,9 @@ module top_uart(
         .data_valid(data_valid)
     );
 
-    transmitter uart_transmitter(
+    transmitter #(
+        .DATA_BITS(DATA_BITS)
+    )uart_transmitter(
         .clk(clk),
         .reset(reset),
         .tick(tick),
