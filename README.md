@@ -102,3 +102,34 @@ Transmiterea este realizată conform structurii standard a unui cadru UART:
 - în starea DATA, cei opt biți ai octetului sunt transmiși succesiv în ordinea LSB First, începând cu data_reg[0] și terminând cu data_reg[7]
 - în starea STOP, linia tx este readusă la nivel logic HIGH pentru transmiterea bitului de stop
 - la finalul cadrului, semnalul tx_done este activat pentru a indica finalizarea transmisiei, iar modulul revine în starea IDLE
+
+# Modulul top_uart
+
+După implementarea și verificarea individuală a modulelor receiver și transmitter, acestea au fost integrate într-un modul superior numit top_uart.
+Scopul modulului top_uart este de a realiza conexiunea dintre componentele UART și de a obține o arhitectură completă de tip UART Loopback. În această configurație, orice caracter transmis de calculator către FPGA este recepționat și retransmis automat către calculator, fără a fi modificat.
+Structura implementată este:
+PuTTY → RX → UART Receiver → UART Transmitter → TX → PuTTY
+
+Modulul top_uart integrează următoarele componente:
+- modulul baudrate_generator, care generează semnalul tick utilizat pentru sincronizarea comunicației
+- modulul receiver, care recepționează și reconstruiește octetul transmis pe linia serială
+- modulul transmitter, care retransmite octetul recepționat pe linia serială TX
+
+# Modulul tb_uart
+
+Pentru verificarea funcționării arhitecturii UART complete a fost realizat un testbench pentru modulul top_uart, denumit tb_uart.
+Spre deosebire de testbench-urile individuale pentru modulele receiver și transmitter, testbench-ul integrat urmărește verificarea funcționării întregului lanț de comunicație.
+Octetul recepționat este transmis intern de modulul receiver către modulul transmitter. La final, este urmărit semnalul tx, pentru a verifica dacă octetul recepționat este retransmis corect.
+Prin această simulare se verifică atât funcționarea individuală a modulelor, cât și interacțiunea dintre acestea.
+
+# Testarea pe placa FPGA
+
+După verificarea prin simulare a modulelor UART, arhitectura top_uart a fost implementată pe placa FPGA Nexys A7-100T.
+Pentru testarea comunicației seriale cu un calculator a fost utilizată aplicația PuTTY, configurată cu parametrii corespunzători comunicației UART:
+baud rate: 9600
+data bits: 8
+parity: None
+stop bits: 1
+flow control: None
+
+Prin intermediul aplicației PuTTY, caracterele introduse de la tastatură sunt transmise către placa FPGA prin interfața UART. Modulul receiver recepționează caracterele, iar modulul transmitter le retransmite către calculator.
