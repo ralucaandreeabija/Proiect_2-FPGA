@@ -145,12 +145,25 @@ Module noi necesare:
 
 În această etapă apare problema faptului că UART Transmitter poate transmite un singur caracter la un moment dat. La 9600 baud, un cadru UART format din 10 biți necesită aproximativ 1,04 ms. Prin urmare, un mesaj format din mai multe caractere poate necesita câteva zeci de milisecunde pentru a fi transmis complet. Dacă sistemul nu are un mecanism de stocare temporară, comenzile sau mesajele noi pot fi pierdute, deci este necesară implementarea unui modul FIFO.
 
-Un alt aspect care trebuie stabilit în arhitectura Etapei 2 este modul în care sunt tratate comenzile simultane provenite din surse diferite ( comandă de la tastatură sau apăsare de buton ).
-În acest caz, trebuie stabilit:
-- Care acțiune are prioritate?
-- Are prioritate comanda primită prin UART?
-- Are prioritate apăsarea butonului?
-- Sunt executate ambele comenzi?
-- Este posibilă evitarea apariției simultane printr-un mecanism de control?
+# Modulul command_interpreter
 
-O soluție posibilă este utilizarea unui mecanism de arbitrare care acceptă un singur eveniment pe ciclu de procesare, iar celelalte evenimente sunt fie ignorate, fie stocate într-un FIFO pentru procesare ulterioară.
+Primul pas în procesarea unei comenzi este transformarea caracterului primit prin UART într-o acțiune clară pentru restul sistemului.
+Deoarece UART Receiver-ul transmite datele sub forma unor caractere ASCII, restul modulelor nu ar trebui să fie nevoite să compare direct caractere precum 'I', 'D' sau 'R'. Din acest motiv, command_interpreter face separarea dintre caracterul primit și acțiunea care trebuie executată.
+
+# Modulul counter_to_hex
+
+Valoarea counter-ului este stocată intern într-un format binar pe 16 biți. Acest format este potrivit pentru efectuarea operațiilor de incrementare și decrementare, dar nu poate fi transmis direct ca text către un terminal.
+Modulul counter_to_hex selectează, pe rând, fiecar cifră hexazecimală din valoarea pe 16 biți. Deoarece 16 biți pot fi împărțiți în patru grupuri de câte 4 biți, valoarea counter-ului poate fi reprezentată prin patru cifre hexazecimale.
+
+# Modulul message
+
+După ce o comandă a fost interpretată și counter-ul a fost actualizat, utilizatorul trebuie să primească un răspuns vizibil pe terminal. Problema este că UART-ul nu transmite un mesaj întreg, ci doar câte un caracter la un moment dat.
+Prin urmare, modulul message trebuie să rezolve două probleme:
+- să determine ce mesaj trebuie transmis
+- să transmită mesajul caracter cu caracter
+Pentru a evita scrierea separată a fiecărui caracter în cod, mesajele sunt stocate în buffere de tip string. Deoarece meniul este mult mai lung decât mesajele obișnuite, se utilizează un buffer separat pentru acesta. Mesajele normale, precum cele pentru INC, DEC, RESET, STATUS și ERROR, sunt stocate într-un buffer comun.
+Transmiterea unui mesaj nu se poate realiza într-un singur ciclu de clock, deoarece mesajul conține mai multe caractere. Din acest motiv, modulul message utilizează un FSM. Când una dintre comenzi este detectată, modulul memorează tipul mesajului și trece la următoarea etapă.
+În starea de transmitere, modulul verifică dacă TX FIFO este disponibil. Această verificare este necesară deoarece modulul nu poate scrie un caracter într-un FIFO care este deja plin.
+Mesajele pentru comenzile INC, DEC, RESET și STATUS conțin două tipuri de informații:
+- o parte statică, cunoscută în momentul generării mesajului
+- valoarea dinamică a counter-ului
