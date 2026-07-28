@@ -6,8 +6,9 @@ module transmitter #(
     input clk,
     input reset,
     input tick,
-    input [DATA_BITS-1:0] datain,
-    input data_valid,
+    input logic [DATA_BITS-1:0] fifo_dout,
+    input logic fifo_empty,
+    output logic fifo_rd_en,
     output logic tx,
     output logic tx_done
     );
@@ -28,15 +29,20 @@ logic [DATA_BITS - 1:0] data_reg;
 always @(posedge clk) begin 
     if (reset) begin 
         state <= IDLE;
+        tx <= 1'b1;
+        tx_done <= 1'b0;
+        fifo_rd_en <= 1'b0;
         bit_index <= 1'b0;
         data_reg <= 1'b0;
-    end else begin 
+    end else begin
+        fifo_rd_en <= 1'b0;
+        tx_done <= 1'b0;
         case (state) 
             IDLE: begin 
                 tx <= 1'b1;
-                tx_done <= 1'b0;
-                if(data_valid == 1) begin
-                    data_reg <= datain;
+                if(!fifo_empty) begin
+                    fifo_rd_en <= 1'b1;
+                    data_reg <= fifo_dout;
                     bit_index <= 1'b0;
                     state <= START;
                 end
@@ -58,7 +64,7 @@ always @(posedge clk) begin
                  end
             end
             STOP: begin 
-                tx <= 1;
+                tx <= 1'b1;
                 if (tick == 1) begin
                     tx_done <= 1'b1;
                     state <= IDLE; 
