@@ -167,3 +167,9 @@ Transmiterea unui mesaj nu se poate realiza într-un singur ciclu de clock, deoa
 Mesajele pentru comenzile INC, DEC, RESET și STATUS conțin două tipuri de informații:
 - o parte statică, cunoscută în momentul generării mesajului
 - valoarea dinamică a counter-ului
+
+
+În timpul testării pe placa Nexys A7, funcționalitatea principală a sistemului a fost validată: comenzile primite prin UART modifică valoarea counter-ului, LED-urile afișează corect conținutul acestuia, iar mesajele sunt transmise către terminalul serial. Totuși, în timpul afișării în PuTTY au fost observate ocazional caractere corupte sau șiruri de caractere fără semnificație între mesajele valide.
+În urma testelor s-a observat că mesajele utile sunt transmise corect, însă, în anumite situații, între două mesaje valide apar unul sau mai multe caractere nedorite. Acest comportament sugerează existența unor octeți reziduali sau a unei probleme de sincronizare între citirea FIFO și încărcarea registrului de transmisie, aspect care necesită investigații suplimentare.
+
+<img width="825" height="521" alt="image" src="https://github.com/user-attachments/assets/bfb1c46e-9fd5-4d05-8a9b-152ce74aa859" />
