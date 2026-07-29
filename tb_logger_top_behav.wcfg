@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_logger_top_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="tb_logger_top" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="70,050,115.000 ns"></ZoomStartTime>
+      <ZoomEndTime time="70,050,927.001 ns"></ZoomEndTime>
+      <Cursor1Time time="70,050,345.000 ns"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="111"></NameColumnWidth>
+      <ValueColumnWidth column_width="72"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="36" />
+   <wvobject fp_name="/tb_logger_top/cpu_resetn" type="logic">
+      <obj_property name="ElementShortName">cpu_resetn</obj_property>
+      <obj_property name="ObjectShortName">cpu_resetn</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/rx" type="logic">
+      <obj_property name="ElementShortName">rx</obj_property>
+      <obj_property name="ObjectShortName">rx</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/tx" type="logic">
+      <obj_property name="ElementShortName">tx</obj_property>
+      <obj_property name="ObjectShortName">tx</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider25">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/clock" type="logic">
+      <obj_property name="ElementShortName">clock</obj_property>
+      <obj_property name="ObjectShortName">clock</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider26">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/btn_inc" type="logic">
+      <obj_property name="ElementShortName">btn_inc</obj_property>
+      <obj_property name="ObjectShortName">btn_inc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/btn_inc_db" type="logic">
+      <obj_property name="ElementShortName">btn_inc_db</obj_property>
+      <obj_property name="ObjectShortName">btn_inc_db</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/btn_inc_pulse" type="logic">
+      <obj_property name="ElementShortName">btn_inc_pulse</obj_property>
+      <obj_property name="ObjectShortName">btn_inc_pulse</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider33">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/btn_dec" type="logic">
+      <obj_property name="ElementShortName">btn_dec</obj_property>
+      <obj_property name="ObjectShortName">btn_dec</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/btn_dec_db" type="logic">
+      <obj_property name="ElementShortName">btn_dec_db</obj_property>
+      <obj_property name="ObjectShortName">btn_dec_db</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/btn_dec_pulse" type="logic">
+      <obj_property name="ElementShortName">btn_dec_pulse</obj_property>
+      <obj_property name="ObjectShortName">btn_dec_pulse</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider34">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/btn_reset" type="logic">
+      <obj_property name="ElementShortName">btn_reset</obj_property>
+      <obj_property name="ObjectShortName">btn_reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/btn_reset_db" type="logic">
+      <obj_property name="ElementShortName">btn_reset_db</obj_property>
+      <obj_property name="ObjectShortName">btn_reset_db</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/btn_reset_pulse" type="logic">
+      <obj_property name="ElementShortName">btn_reset_pulse</obj_property>
+      <obj_property name="ObjectShortName">btn_reset_pulse</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider35">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/leds" type="array">
+      <obj_property name="ElementShortName">leds[15:0]</obj_property>
+      <obj_property name="ObjectShortName">leds[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/db_inc/counter" type="array">
+      <obj_property name="ElementShortName">counter[19:0]</obj_property>
+      <obj_property name="ObjectShortName">counter[19:0]</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider37">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/state" type="array">
+      <obj_property name="ElementShortName">state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/message_type" type="array">
+      <obj_property name="ElementShortName">message_type[3:0]</obj_property>
+      <obj_property name="ObjectShortName">message_type[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/bytes_left" type="array">
+      <obj_property name="ElementShortName">bytes_left[7:0]</obj_property>
+      <obj_property name="ObjectShortName">bytes_left[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/tx_fifo_wr_en" type="logic">
+      <obj_property name="ElementShortName">tx_fifo_wr_en</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/message_inst/tx_fifo_din" type="array">
+      <obj_property name="ElementShortName">tx_fifo_din[7:0]</obj_property>
+      <obj_property name="ObjectShortName">tx_fifo_din[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider43">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/fifo_inst/wr_en" type="logic">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/fifo_inst/rd_en" type="logic">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/fifo_inst/dout" type="array">
+      <obj_property name="ElementShortName">dout[7:0]</obj_property>
+      <obj_property name="ObjectShortName">dout[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/fifo_inst/full" type="logic">
+      <obj_property name="ElementShortName">full</obj_property>
+      <obj_property name="ObjectShortName">full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/fifo_inst/empty" type="logic">
+      <obj_property name="ElementShortName">empty</obj_property>
+      <obj_property name="ObjectShortName">empty</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider49">
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/uart_tx/state" type="array">
+      <obj_property name="ElementShortName">state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/uart_tx/bit_index" type="array">
+      <obj_property name="ElementShortName">bit_index[2:0]</obj_property>
+      <obj_property name="ObjectShortName">bit_index[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_logger_top/DUT/uart_tx/tx" type="logic">
+      <obj_property name="ElementShortName">tx</obj_property>
+      <obj_property name="ObjectShortName">tx</obj_property>
+   </wvobject>
+</wave_config>
