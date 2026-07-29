@@ -12,13 +12,18 @@ module message(
     input logic menu_command,
     input logic error_command,
     input logic [7:0] unknown_command,
+    input overflow,
+    input underflow,
+    // Comenzi de la butoane
+    input btn_inc_pulse,
+    input btn_dec_pulse,
     // Interfata TX FIFO
     input logic tx_fifo_full,
     output logic [7:0] tx_fifo_din,
     output logic tx_fifo_wr_en
 );
 
-    localparam BYTES = 32;
+    localparam BYTES = 48;
     localparam MENU_BYTES = 128;
     
     logic [8*BYTES-1:0] buffer;
@@ -32,14 +37,26 @@ module message(
     localparam LEN_STATUS = 26;
     localparam LEN_ERROR = 19;
     localparam LEN_MENU = 121;
+    localparam LEN_BTN_INC = 29;
+    localparam LEN_BTN_DEC = 29;
+    localparam LEN_BTN_RESET = 31;
+    localparam LEN_WELCOME = 41;
+    localparam LEN_OVERFLOW = 27;
+    localparam LEN_UNDERFLOW = 27;
 
-    typedef enum logic [2:0] {
+    typedef enum logic [3:0] {
         MSG_INC,
         MSG_DEC,
         MSG_RESET,
         MSG_STATUS,
         MSG_MENU,
-        MSG_ERROR
+        MSG_ERROR,
+        MSG_BTN_INC,
+        MSG_BTN_DEC,
+        MSG_BTN_RESET,
+        MSG_OVERFLOW,
+        MSG_UNDERFLOW,
+        MSG_WELCOME
     } message_type_t;
     
     message_type_t message_type;
@@ -59,6 +76,8 @@ module message(
     logic [2:0] hex_position;
     logic [47:0] hex_ascii;
 
+    logic welcome_sent;
+
     counter_to_hex hex_converter (
         .counter(counter),
         .ascii_hex(hex_ascii)
@@ -74,70 +93,123 @@ module message(
             buffer <= 1'b0;
             menu_buffer <= 1'b0;
             bytes_left <= 1'b0;
+            welcome_sent <= 1'b0;
         end
         else begin
             tx_fifo_wr_en <= 1'b0;
             case (state)
                 IDLE: begin
-                    if(inc_command) begin
+                    if (!welcome_sent) begin
+                        message_type <= MSG_WELCOME;
+                        welcome_sent <= 1'b1;
+                        state <= WAIT_COUNTER;
+                    end
+                    else if (btn_inc_pulse) begin
+                        message_type <= MSG_BTN_INC;
+                        state <= WAIT_COUNTER;
+                    end
+                    else if (btn_dec_pulse) begin
+                        message_type <= MSG_BTN_DEC;
+                        state <= WAIT_COUNTER;
+                    end
+                    else if (inc_command) begin
                         message_type <= MSG_INC;
                         state <= WAIT_COUNTER;
                     end
-                    else if(dec_command) begin
+                    else if (dec_command) begin
                         message_type <= MSG_DEC;
                         state <= WAIT_COUNTER;
                     end
-                    else if(reset_command) begin
+                    else if (reset_command) begin
                         message_type <= MSG_RESET;
                         state <= WAIT_COUNTER;
                     end
-                    else if(status_command) begin
+                    else if (status_command) begin
                         message_type <= MSG_STATUS;
                         state <= WAIT_COUNTER;
                     end
-                    else if(menu_command) begin
+                    else if (menu_command) begin
                         message_type <= MSG_MENU;
                         state <= WAIT_COUNTER;
                     end
-                    else if(error_command) begin
-                        message_type <= MSG_ERROR;
+                    else if (error_command) begin
                         error_char <= unknown_command;
+                        message_type <= MSG_ERROR;
+                        state <= WAIT_COUNTER;
+                    end
+                    else if (overflow) begin
+                        message_type <= MSG_OVERFLOW;
+                        state <= WAIT_COUNTER;
+                    end
+                    else if (underflow) begin
+                        message_type <= MSG_UNDERFLOW;
                         state <= WAIT_COUNTER;
                     end
                 end
                 WAIT_COUNTER: begin
+                    hex_position <= 1'b0;
                     state <= LOAD_MESSAGE;
                 end
                 LOAD_MESSAGE: begin
                     case (message_type)
                         MSG_INC: begin
-                            buffer <= {"[CMD] INC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_INC){8'h00}}};
+                            buffer <= {"[CMD] INC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_INC){8'h00}}}; 
                             bytes_left <= LEN_INC;
                             state <= SEND;
                         end
                         MSG_DEC: begin
-                            buffer <= {"[CMD] DEC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_DEC){8'h00}}};
+                            buffer <= {"[CMD] DEC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_DEC){8'h00}}}; 
                             bytes_left <= LEN_DEC;
                             state <= SEND;
                         end
                         MSG_RESET: begin
-                            buffer <= {"[CMD] RESET | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_RESET){8'h00}}};
+                            buffer <= {"[CMD] RESET | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_RESET){8'h00}}}; 
                             bytes_left <= LEN_RESET;
                             state <= SEND;
                         end
                         MSG_STATUS: begin
-                            buffer <= {"[STATUS] Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_STATUS){8'h00}}};
+                            buffer <= {"[STATUS] Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_STATUS){8'h00}}}; 
                             bytes_left <= LEN_STATUS;
                             state <= SEND;
                         end
                         MSG_MENU: begin
-                            menu_buffer <= {"Commands:",8'h0D,8'h0A,"I/i - Increment counter",8'h0D,8'h0A,"D/d - Decrement counter",8'h0D,8'h0A,"R/r - Reset counter",8'h0D,8'h0A,"S/s - Show status",8'h0D,8'h0A,"?   - Show menu",8'h0D,8'h0A,{(MENU_BYTES-LEN_MENU){8'h00}}};
+                            menu_buffer <= {"Commands:",8'h0D,8'h0A,"I/i - Increment counter",8'h0D,8'h0A,"D/d - Decrement counter",8'h0D,8'h0A,"R/r - Reset counter",8'h0D,8'h0A,"S/s - Show status",8'h0D,8'h0A,"? - Show menu",8'h0D,8'h0A,{(MENU_BYTES-LEN_MENU){8'h00}}}; 
                             bytes_left <= LEN_MENU;
                             state <= SEND_MENU;
                         end
                         MSG_ERROR: begin
-                            buffer <= {"[ERR] Unknown: ",error_char,"'",8'h0D,8'h0A,{(BYTES-LEN_ERROR){8'h00}}};
+                            buffer <= {"[ERR] Unknown: '",error_char,"'",8'h0D,8'h0A,{(BYTES-LEN_ERROR){8'h00}}}; 
                             bytes_left <= LEN_ERROR;
+                            state <= SEND;
+                        end
+                        MSG_BTN_INC: begin
+                            buffer <= {"[BTN] INC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_BTN_INC){8'h00}}};
+                            bytes_left <= LEN_BTN_INC;
+                            state <= SEND;
+                        end
+                        MSG_BTN_DEC: begin
+                            buffer <= {"[BTN] DEC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_BTN_DEC){8'h00}}};
+                            bytes_left <= LEN_BTN_DEC;
+                            state <= SEND;
+                        end
+                        MSG_BTN_RESET: begin
+                            buffer <= {"[BTN] RESET | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_BTN_RESET){8'h00}}};
+                            bytes_left <= LEN_BTN_RESET;
+                            state <= SEND;
+                        end
+                        MSG_OVERFLOW: begin
+                            buffer <= {"[SYS] OVERFLOW | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_OVERFLOW){8'h00}}};
+                            bytes_left <= LEN_OVERFLOW;
+                            state <= SEND;
+                        end
+                        MSG_UNDERFLOW: begin
+                            buffer <= {"[SYS] UNDERFLOW | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_UNDERFLOW){8'h00}}};
+                            bytes_left <= LEN_UNDERFLOW;
+                            state <= SEND;
+                        end
+                        MSG_WELCOME: begin
+                            buffer <= {"[SYS] UART Logger Ready",8'h0D,8'h0A,"[SYS] Type '?' for help",8'h0D,8'h0A,{(BYTES-LEN_WELCOME){8'h00}}};
+                            bytes_left <= LEN_WELCOME;
                             state <= SEND;
                         end
                     endcase
@@ -150,6 +222,7 @@ module message(
                         bytes_left <= bytes_left - 1;
                         if (bytes_left == 1) begin
                             state <= IDLE;
+                            buffer <= 1'b0;
                         end
                     end
                 end
@@ -161,6 +234,7 @@ module message(
                         bytes_left <= bytes_left - 1;
                         if (bytes_left == 1) begin
                             state <= IDLE;
+                            menu_buffer <= 1'b0;
                         end
                     end
                 end

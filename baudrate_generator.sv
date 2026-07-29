@@ -5,6 +5,7 @@ module baudrate_generator #(
     parameter integer BAUD_RATE = 9600
 )(
     input clk,
+    input reset,
     output tick
     );
 
@@ -13,8 +14,10 @@ localparam integer COUNTER_WIDTH = $clog2(CLKS_PER_BIT);
 logic [COUNTER_WIDTH-1:0] counter;   
 
 always@(posedge clk) begin
-    if(counter == CLKS_PER_BIT - 1)
-        counter <= 0;
+    if(reset)
+        counter <= 1'b0;
+    else if(counter == CLKS_PER_BIT - 1)
+        counter <= 1'b0;
     else
         counter <= counter + 1'b1;
 end    

@@ -15,11 +15,12 @@ module transmitter #(
 
 localparam integer BIT_INDEX_WIDTH = $clog2(DATA_BITS);
     
-typedef enum logic [1:0] { 
-    IDLE, 
-    START, 
-    DATA, 
-    STOP 
+typedef enum logic [2:0] {
+    IDLE,
+    READ_FIFO,
+    START,
+    DATA,
+    STOP
 } state_t; 
   
 state_t state;     
@@ -38,15 +39,18 @@ always @(posedge clk) begin
         fifo_rd_en <= 1'b0;
         tx_done <= 1'b0;
         case (state) 
-            IDLE: begin 
+            IDLE: begin
                 tx <= 1'b1;
-                if(!fifo_empty) begin
+                if (!fifo_empty) begin
                     fifo_rd_en <= 1'b1;
-                    data_reg <= fifo_dout;
-                    bit_index <= 1'b0;
-                    state <= START;
+                    state <= READ_FIFO;
                 end
-            end 
+            end
+            READ_FIFO: begin
+                data_reg <= fifo_dout;
+                bit_index <= 1'b0;
+                state <= START;
+            end
             START: begin
                 tx <= 1'b0;
                 if (tick == 1)
@@ -63,13 +67,13 @@ always @(posedge clk) begin
                     end
                  end
             end
-            STOP: begin 
+            STOP: begin
                 tx <= 1'b1;
-                if (tick == 1) begin
+                if (tick) begin
                     tx_done <= 1'b1;
-                    state <= IDLE; 
-                end   
-            end 
+                    state <= IDLE;
+                end
+            end
             default: begin 
                 state <= IDLE; 
             end 
