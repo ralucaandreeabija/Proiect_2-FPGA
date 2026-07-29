@@ -161,6 +161,7 @@ După ce o comandă a fost interpretată și counter-ul a fost actualizat, utili
 Prin urmare, modulul message trebuie să rezolve două probleme:
 - să determine ce mesaj trebuie transmis
 - să transmită mesajul caracter cu caracter
+
 Pentru a evita scrierea separată a fiecărui caracter în cod, mesajele sunt stocate în buffere de tip string. Deoarece meniul este mult mai lung decât mesajele obișnuite, se utilizează un buffer separat pentru acesta. Mesajele normale, precum cele pentru INC, DEC, RESET, STATUS și ERROR, sunt stocate într-un buffer comun.
 Transmiterea unui mesaj nu se poate realiza într-un singur ciclu de clock, deoarece mesajul conține mai multe caractere. Din acest motiv, modulul message utilizează un FSM. Când una dintre comenzi este detectată, modulul memorează tipul mesajului și trece la următoarea etapă.
 În starea de transmitere, modulul verifică dacă TX FIFO este disponibil. Această verificare este necesară deoarece modulul nu poate scrie un caracter într-un FIFO care este deja plin.
@@ -170,6 +171,14 @@ Mesajele pentru comenzile INC, DEC, RESET și STATUS conțin două tipuri de inf
 
 
 În timpul testării pe placa Nexys A7, funcționalitatea principală a sistemului a fost validată: comenzile primite prin UART modifică valoarea counter-ului, LED-urile afișează corect conținutul acestuia, iar mesajele sunt transmise către terminalul serial. Totuși, în timpul afișării în PuTTY au fost observate ocazional caractere corupte sau șiruri de caractere fără semnificație între mesajele valide.
-În urma testelor s-a observat că mesajele utile sunt transmise corect, însă, în anumite situații, între două mesaje valide apar unul sau mai multe caractere nedorite. Acest comportament sugerează existența unor octeți reziduali sau a unei probleme de sincronizare între citirea FIFO și încărcarea registrului de transmisie, aspect care necesită investigații suplimentare.
+În urma testelor s-a observat că mesajele utile sunt transmise corect, însă, în anumite situații, între două mesaje valide apar unul sau mai multe caractere nedorite.
 
 <img width="825" height="521" alt="image" src="https://github.com/user-attachments/assets/bfb1c46e-9fd5-4d05-8a9b-152ce74aa859" />
+<img width="825" height="521" alt="image" src="https://github.com/user-attachments/assets/70b04e53-7fb1-44e9-aba9-deb13224ef2f" />
+
+În stadiul actual al proiectului, funcționalitatea de bază este implementată, însă au fost identificate câteva aspecte care necesită investigații și îmbunătățiri:
+
+Mesajele generate de butoane: După mai multe apăsări succesive ale butoanelor, FPGA-ul poate transmite în mod repetat același mesaj eronat, în loc să trimită un singur mesaj pentru fiecare eveniment. În plus, oprirea s-a observat a fi posibilă doar la apăsarea butonului de reset.
+Mesajul de pornire (Welcome): Mesajul transmis automat la inițializarea sistemului este primit ocazional incomplet, lipsind primele caractere.
+Mesajele de overflow și underflow: Deși condițiile de overflow și underflow sunt detectate de contor, mesajele UART asociate nu sunt întotdeauna transmise.
+Reset prin buton dedicat: În prezent este utilizat doar butonul de reset al plăcii (cpu_resetn). Implementarea unui buton dedicat pentru resetarea contorului a fost eliminată temporar din cauza unor probleme de funcționare.
