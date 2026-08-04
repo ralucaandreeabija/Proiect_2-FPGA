@@ -1,0 +1,449 @@
+`timescale 1ns/1ps
+
+module tb_logger_top;
+
+//////////////////////////////////////////////////////////////
+// Clock / Reset
+//////////////////////////////////////////////////////////////
+
+logic clock;
+logic cpu_resetn;
+
+logic btn_inc;
+logic btn_dec;
+
+logic rx;
+wire tx;
+
+wire [15:0] leds;
+
+logger_top DUT(
+    .clock(clock),
+    .cpu_resetn(cpu_resetn),
+    .btn_inc(btn_inc),
+    .btn_dec(btn_dec),
+    .rx(rx),
+    .tx(tx),
+    .leds(leds)
+);
+
+//////////////////////////////////////////////////////////////
+// Parameters
+//////////////////////////////////////////////////////////////
+
+parameter CLK_PERIOD       = 10;
+parameter UART_BIT_PERIOD  = 1041700;
+parameter DEBOUNCE_CYCLES  = 30;
+parameter WAIT_MESSAGE     = 500000;
+
+localparam CMD_INC     = "I";
+localparam CMD_DEC     = "D";
+localparam CMD_RESET   = "R";
+localparam CMD_STATUS  = "S";
+localparam CMD_MENU    = "?";
+localparam CMD_ERROR   = "X";
+
+//////////////////////////////////////////////////////////////
+// Clock
+//////////////////////////////////////////////////////////////
+
+initial
+    clock = 0;
+
+always #(CLK_PERIOD/2) clock = ~clock;
+
+//////////////////////////////////////////////////////////////
+// UART idle
+//////////////////////////////////////////////////////////////
+
+initial
+    rx = 1'b1;
+
+//////////////////////////////////////////////////////////////
+// UART WRITE BYTE
+//////////////////////////////////////////////////////////////
+
+task UART_WRITE_BYTE;
+
+input [7:0] i_Data;
+
+integer i;
+
+begin
+
+    rx <= 0;
+    #(UART_BIT_PERIOD);
+
+    for(i=0;i<8;i=i+1)
+    begin
+        rx <= i_Data[i];
+        #(UART_BIT_PERIOD);
+    end
+
+    rx <= 1;
+    #(UART_BIT_PERIOD);
+
+end
+
+endtask
+
+//////////////////////////////////////////////////////////////
+// Button Tasks
+//////////////////////////////////////////////////////////////
+
+task PRESS_INC;
+begin
+
+    btn_inc = 1;
+    repeat(DEBOUNCE_CYCLES) @(posedge clock);
+
+    btn_inc = 0;
+    repeat(DEBOUNCE_CYCLES) @(posedge clock);
+
+end
+endtask
+
+
+task PRESS_DEC;
+begin
+
+    btn_dec = 1;
+    repeat(DEBOUNCE_CYCLES) @(posedge clock);
+
+    btn_dec = 0;
+    repeat(DEBOUNCE_CYCLES) @(posedge clock);
+
+end
+endtask
+
+//////////////////////////////////////////////////////////////
+// Wait Task
+//////////////////////////////////////////////////////////////
+
+task WAIT_UART;
+begin
+    repeat(WAIT_MESSAGE) @(posedge clock);
+end
+endtask
+
+//////////////////////////////////////////////////////////////
+// Monitor
+//////////////////////////////////////////////////////////////
+
+initial
+begin
+
+$display("--------------------------------------------");
+$display("LOGGER TOP TESTBENCH");
+$display("--------------------------------------------");
+
+$monitor(
+"TIME=%0t  Counter=%h  RX=%h  Valid=%b  INC=%b DEC=%b RESET=%b FIFO_EMPTY=%b MSG_STATE=%0d TX_STATE=%0d",
+$time,
+DUT.counter,
+DUT.received_data,
+DUT.data_valid,
+DUT.inc_command,
+DUT.dec_command,
+DUT.reset_command,
+DUT.fifo_empty,
+DUT.message_inst.state,
+DUT.uart_tx.state
+);
+
+end
+
+//////////////////////////////////////////////////////////////
+// Stimuli
+//////////////////////////////////////////////////////////////
+
+initial
+begin
+
+cpu_resetn = 0;
+
+btn_inc = 0;
+btn_dec = 0;
+
+//////////////////////////////////////////////////////////////
+// RESET
+//////////////////////////////////////////////////////////////
+
+repeat(20) @(posedge clock);
+
+cpu_resetn = 1;
+
+//////////////////////////////////////////////////////////////
+// TEST 1
+// Welcome Message
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 1 - Welcome");
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 2
+// UART INC
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 2 - UART INC");
+
+UART_WRITE_BYTE(CMD_INC);
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 3
+// UART DEC
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 3 - UART DEC");
+
+UART_WRITE_BYTE(CMD_DEC);
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 4
+// STATUS
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 4 - STATUS");
+
+UART_WRITE_BYTE(CMD_STATUS);
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 5
+// MENU
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 5 - MENU");
+
+UART_WRITE_BYTE(CMD_MENU);
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 6
+// Unknown Command
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 6 - UNKNOWN");
+
+UART_WRITE_BYTE(CMD_ERROR);
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 7
+// RESET COMMAND
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 7 - RESET");
+
+UART_WRITE_BYTE(CMD_INC);
+WAIT_UART();
+
+UART_WRITE_BYTE(CMD_INC);
+WAIT_UART();
+
+UART_WRITE_BYTE(CMD_RESET);
+WAIT_UART();
+//////////////////////////////////////////////////////////////
+// TEST 8
+// Button INC
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 8 - BUTTON INC");
+
+PRESS_INC();
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 9
+// Button DEC
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 9 - BUTTON DEC");
+
+PRESS_DEC();
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 10
+// UNDERFLOW
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 10 - UNDERFLOW");
+
+// Counter trebuie sa fie 0
+
+UART_WRITE_BYTE(CMD_RESET);
+
+WAIT_UART();
+
+PRESS_DEC();
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 11
+// OVERFLOW
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 11 - OVERFLOW");
+
+// Fortam contorul aproape de overflow
+
+force DUT.counter_inst.leds = 16'hFFFF;
+
+PRESS_INC();
+
+WAIT_UART();
+
+release DUT.counter_inst.leds;
+
+//////////////////////////////////////////////////////////////
+// TEST 12
+// Multiple Button Presses
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 12 - MULTIPLE BUTTON PRESSES");
+
+repeat(5)
+begin
+    PRESS_INC();
+    WAIT_UART();
+end
+
+repeat(5)
+begin
+    PRESS_DEC();
+    WAIT_UART();
+end
+
+//////////////////////////////////////////////////////////////
+// TEST 13
+// UART Burst
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 13 - UART BURST");
+
+UART_WRITE_BYTE(CMD_INC);
+UART_WRITE_BYTE(CMD_INC);
+UART_WRITE_BYTE(CMD_INC);
+UART_WRITE_BYTE(CMD_DEC);
+UART_WRITE_BYTE(CMD_STATUS);
+UART_WRITE_BYTE(CMD_MENU);
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 14
+// Mixed Commands
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 14 - MIXED TEST");
+
+PRESS_INC();
+WAIT_UART();
+
+UART_WRITE_BYTE(CMD_INC);
+WAIT_UART();
+
+PRESS_DEC();
+WAIT_UART();
+
+UART_WRITE_BYTE(CMD_STATUS);
+WAIT_UART();
+
+UART_WRITE_BYTE(CMD_MENU);
+WAIT_UART();
+
+UART_WRITE_BYTE(CMD_ERROR);
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// TEST 15
+// Stress Test
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 15 - STRESS");
+
+repeat(10)
+begin
+
+    UART_WRITE_BYTE(CMD_INC);
+    WAIT_UART();
+
+end
+
+repeat(10)
+begin
+
+    UART_WRITE_BYTE(CMD_DEC);
+    WAIT_UART();
+
+end
+
+//////////////////////////////////////////////////////////////
+// TEST 16
+// Long Button Test
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("TEST 16 - BUTTON STRESS");
+
+repeat(20)
+begin
+
+    PRESS_INC();
+
+end
+
+WAIT_UART();
+
+repeat(20)
+begin
+
+    PRESS_DEC();
+
+end
+
+WAIT_UART();
+
+//////////////////////////////////////////////////////////////
+// END
+//////////////////////////////////////////////////////////////
+
+$display("");
+$display("--------------------------------------------");
+$display("Simulation Finished");
+$display("--------------------------------------------");
+
+repeat(1000) @(posedge clock);
+
+$finish;
+
+end
+
+endmodule

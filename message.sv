@@ -17,10 +17,11 @@ module message(
     // Comenzi de la butoane
     input btn_inc_pulse,
     input btn_dec_pulse,
+    input btn_reset_pulse,
     // Interfata TX FIFO
-    input logic tx_fifo_full,
     output logic [7:0] tx_fifo_din,
-    output logic tx_fifo_wr_en
+    output logic tx_fifo_wr_en,
+    input logic tx_fifo_full
 );
 
     localparam BYTES = 48;
@@ -35,12 +36,12 @@ module message(
     localparam LEN_DEC = 29;
     localparam LEN_RESET = 31;
     localparam LEN_STATUS = 26;
-    localparam LEN_ERROR = 19;
+    localparam LEN_ERROR = 22;
     localparam LEN_MENU = 121;
     localparam LEN_BTN_INC = 29;
     localparam LEN_BTN_DEC = 29;
     localparam LEN_BTN_RESET = 31;
-    localparam LEN_WELCOME = 41;
+    localparam LEN_WELCOME = 50;
     localparam LEN_OVERFLOW = 27;
     localparam LEN_UNDERFLOW = 27;
 
@@ -110,6 +111,10 @@ module message(
                     end
                     else if (btn_dec_pulse) begin
                         message_type <= MSG_BTN_DEC;
+                        state <= WAIT_COUNTER;
+                    end
+                    else if (btn_reset_pulse) begin
+                        message_type <= MSG_BTN_RESET;
                         state <= WAIT_COUNTER;
                     end
                     else if (inc_command) begin
