@@ -182,3 +182,25 @@ Mesajele generate de butoane: După mai multe apăsări succesive ale butoanelor
 Mesajul de pornire (Welcome): Mesajul transmis automat la inițializarea sistemului este primit ocazional incomplet, lipsind primele caractere.
 Mesajele de overflow și underflow: Deși condițiile de overflow și underflow sunt detectate de contor, mesajele UART asociate nu sunt întotdeauna transmise.
 Reset prin buton dedicat: În prezent este utilizat doar butonul de reset al plăcii (cpu_resetn). Implementarea unui buton dedicat pentru resetarea contorului a fost eliminată temporar din cauza unor probleme de funcționare.
+
+
+
+# Modificări implementate
+Refacerea modulului UART Receiver, eliminând dependența de semnalul extern tick și implementând sincronizarea internă folosind un contor bazat pe frecvența ceasului și rata de baud.
+Refacerea modulului UART Transmitter, utilizând aceeași metodă de temporizare internă, fără un generator de baud extern.
+Parametrizarea modulelor UART prin CLK_FREQ, BAUD_RATE și DATA_BITS, pentru a permite configurarea ușoară a interfeței seriale.
+Înlocuirea resetului bazat pe semnalul procesorului cu un buton dedicat, tratat prin modulele de debounce și edge detector.
+Actualizarea interfeței dintre modulele message și transmitter, utilizând semnalele tx_data, tx_valid și tx_busy.
+Reorganizarea logicii de transmitere a mesajelor generate de sistem.
+
+În timpul testării au fost investigate mai multe probleme, printre care:
+- transmiterea incompletă a mesajului de inițializare
+- repetarea aceluiași mesaj după apăsări succesive ale butoanelor
+- apariția unor caractere invalide în transmisia UART
+- executarea multiplă a unei singure comenzi UART
+
+# Pașii următori
+- finalizarea integrării RX FIFO și TX FIFO
+- eliminarea procesării duble a comenzilor UART
+- validarea completă a transmisiei mesajelor pentru toate scenariile (comenzi UART, butoane, reset, overflow și underflow)
+- realizarea testelor finale în simulare și pe placa FPGA pentru stabilizarea proiectului UART Loopback înainte de extinderea acestuia cu periferice suplimentare
