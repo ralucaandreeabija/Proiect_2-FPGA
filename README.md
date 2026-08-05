@@ -204,3 +204,15 @@ Reorganizarea logicii de transmitere a mesajelor generate de sistem.
 - eliminarea procesării duble a comenzilor UART
 - validarea completă a transmisiei mesajelor pentru toate scenariile (comenzi UART, butoane, reset, overflow și underflow)
 - realizarea testelor finale în simulare și pe placa FPGA pentru stabilizarea proiectului UART Loopback înainte de extinderea acestuia cu periferice suplimentare
+
+# UPDATE
+<img width="825" height="521" alt="image" src="https://github.com/user-attachments/assets/2af4c3b2-f6e6-4342-a7fb-151408aa25cd" />
+
+În etapa de integrare au fost identificate câteva probleme care urmează să fie rezolvate:
+- mesajul Welcome nu este afișat la pornirea sistemului
+- primul caracter al mesajelor este pierdut, rezultând afișări de forma:
+	- [[CMD]
+ 	- DERFLOW
+  	- VERFLOW
+- mesajele de Overflow și Underflow nu sunt transmise complet
+- sincronizarea dintre modulul Message Generator, FIFO-ul de transmisie și UART Transmitter necesită îmbunătățiri pentru a evita suprapunerea mesajelor consecutive
