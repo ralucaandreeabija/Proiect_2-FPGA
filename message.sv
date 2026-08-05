@@ -2,7 +2,6 @@
 
 module message(
     input logic clock,
-    input logic reset,
     input logic [15:0] counter,
     // Comenzi de la command_interpreter
     input logic inc_command,
@@ -12,12 +11,12 @@ module message(
     input logic menu_command,
     input logic error_command,
     input logic [7:0] unknown_command,
-    input overflow,
-    input underflow,
     // Comenzi de la butoane
     input btn_inc_pulse,
     input btn_dec_pulse,
     input btn_reset_pulse,
+    input logic overflow,
+    input logic underflow,
     // Interfata TX FIFO
     output logic [7:0] tx_fifo_din,
     output logic tx_fifo_wr_en,
@@ -26,11 +25,6 @@ module message(
 
     localparam BYTES = 48;
     localparam MENU_BYTES = 128;
-    
-    logic [8*BYTES-1:0] buffer;
-    logic [8*MENU_BYTES-1:0] menu_buffer;
-    
-    logic [7:0] bytes_left;
     
     localparam LEN_INC = 29;
     localparam LEN_DEC = 29;
@@ -70,14 +64,19 @@ module message(
         SEND_MENU
     } state_t;
 
-    state_t state;
+    state_t state = IDLE;
 
+    logic [8*BYTES-1:0] buffer;
+    logic [8*MENU_BYTES-1:0] menu_buffer;
+    logic [7:0] bytes_left;
     logic [7:0] error_char;
-
     logic [2:0] hex_position;
+    logic welcome_sent = 1'b0;
+
     logic [47:0] hex_ascii;
 
-    logic welcome_sent;
+    logic overflow_pending;
+    logic underflow_pending;
 
     counter_to_hex hex_converter (
         .counter(counter),
@@ -85,77 +84,61 @@ module message(
     );
 
     always @(posedge clock) begin
-        if (reset) begin
-            state <= IDLE;
-            hex_position <= 1'b0;
-            error_char <= 8'h00;
-            tx_fifo_din <= 8'h00;
-            tx_fifo_wr_en <= 1'b0;
-            buffer <= 1'b0;
-            menu_buffer <= 1'b0;
-            bytes_left <= 1'b0;
-            welcome_sent <= 1'b0;
-        end
-        else begin
-            tx_fifo_wr_en <= 1'b0;
-            case (state)
-                IDLE: begin
-                    if (!welcome_sent) begin
-                        message_type <= MSG_WELCOME;
-                        welcome_sent <= 1'b1;
-                        state <= WAIT_COUNTER;
-                    end
-                    else if (btn_inc_pulse) begin
+        if (overflow)
+            overflow_pending <= 1'b1;
+        if (underflow)
+            underflow_pending <= 1'b1;
+        case (state)
+            IDLE: begin
+                tx_fifo_wr_en <= 1'b0;
+                if (!welcome_sent) begin
+                    welcome_sent <= 1'b1;
+                    message_type <= MSG_WELCOME;
+                    state <= LOAD_MESSAGE;
+                end
+                else if (btn_inc_pulse) begin
                         message_type <= MSG_BTN_INC;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (btn_dec_pulse) begin
+                end
+                else if (btn_dec_pulse) begin
                         message_type <= MSG_BTN_DEC;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (btn_reset_pulse) begin
+                 end
+                 else if (btn_reset_pulse) begin
                         message_type <= MSG_BTN_RESET;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (inc_command) begin
+                 end
+                 else if (inc_command) begin
                         message_type <= MSG_INC;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (dec_command) begin
+                 end
+                 else if (dec_command) begin
                         message_type <= MSG_DEC;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (reset_command) begin
+                 end
+                 else if (reset_command) begin
                         message_type <= MSG_RESET;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (status_command) begin
+                 end
+                 else if (status_command) begin
                         message_type <= MSG_STATUS;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (menu_command) begin
+                 end
+                 else if (menu_command) begin
                         message_type <= MSG_MENU;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (error_command) begin
+                 end
+                 else if (error_command) begin
                         error_char <= unknown_command;
                         message_type <= MSG_ERROR;
                         state <= WAIT_COUNTER;
-                    end
-                    else if (overflow) begin
-                        message_type <= MSG_OVERFLOW;
-                        state <= WAIT_COUNTER;
-                    end
-                    else if (underflow) begin
-                        message_type <= MSG_UNDERFLOW;
-                        state <= WAIT_COUNTER;
-                    end
-                end
-                WAIT_COUNTER: begin
+                 end
+            end
+            WAIT_COUNTER: begin
                     hex_position <= 1'b0;
                     state <= LOAD_MESSAGE;
-                end
-                LOAD_MESSAGE: begin
+            end
+            LOAD_MESSAGE: begin
                     case (message_type)
                         MSG_INC: begin
                             buffer <= {"[CMD] INC | Counter: ",hex_ascii,8'h0D,8'h0A,{(BYTES-LEN_INC){8'h00}}}; 
@@ -218,20 +201,32 @@ module message(
                             state <= SEND;
                         end
                     endcase
-                end
-                SEND: begin
+            end
+            SEND: begin
                      if (!tx_fifo_full && bytes_left != 0) begin
                         tx_fifo_din <= buffer[8*BYTES-1 : 8*BYTES-8];
                         tx_fifo_wr_en <= 1'b1;
                         buffer <= buffer << 8;
                         bytes_left <= bytes_left - 1;
                         if (bytes_left == 1) begin
-                            state <= IDLE;
                             buffer <= 1'b0;
+                            if (overflow_pending) begin
+                                overflow_pending <= 1'b0;
+                                message_type <= MSG_OVERFLOW;
+                                state <= LOAD_MESSAGE;
+                            end
+                            else if (underflow_pending) begin
+                                underflow_pending <= 1'b0;
+                                message_type <= MSG_UNDERFLOW;
+                                state <= LOAD_MESSAGE;
+                            end
+                            else begin
+                                state <= IDLE;
+                            end
                         end
                     end
-                end
-                SEND_MENU: begin
+            end
+            SEND_MENU: begin
                      if (!tx_fifo_full && bytes_left != 0) begin
                         tx_fifo_din <= menu_buffer[8*MENU_BYTES-1 : 8*MENU_BYTES-8];
                         tx_fifo_wr_en <= 1'b1;
@@ -242,11 +237,10 @@ module message(
                             menu_buffer <= 1'b0;
                         end
                     end
-                end
-                default: begin
+            end
+            default: begin
                     state <= IDLE;
-                end
-            endcase
-        end
+            end
+        endcase
     end
 endmodule

@@ -55,10 +55,14 @@ module logger_top(
     logic inc;
     logic dec;
     logic reset;
+    logic overflow;
+    logic underflow;
     
     assign inc = inc_command | btn_inc_pulse;
     assign dec = dec_command | btn_dec_pulse;
-    assign reset = reset_command | btn_reset_pulse;
+  
+    logic counter_reset;
+    assign counter_reset = btn_reset_pulse | reset_command;
     
     logic [7:0] tx_data;
     logic tx_valid;
@@ -150,7 +154,7 @@ module logger_top(
         .clk(clock),
         .inc(inc),
         .dec(dec),
-        .reset(reset),
+        .reset(counter_reset),
         .leds(counter),
         .overflow(overflow),
         .underflow(underflow)
@@ -158,7 +162,6 @@ module logger_top(
     
    message message_inst(
        .clock(clock),
-       .reset(reset),
        .counter(counter),
        .inc_command(inc_command),
        .dec_command(dec_command),
@@ -167,10 +170,11 @@ module logger_top(
        .menu_command(menu_command),
        .error_command(error_command),
        .unknown_command(unknown_command),
-       .overflow(overflow),
-       .underflow(underflow),
        .btn_inc_pulse(btn_inc_pulse),
        .btn_dec_pulse(btn_dec_pulse),
+       .btn_reset_pulse(btn_reset_pulse),
+       .overflow(overflow),
+       .underflow(underflow),
        .tx_fifo_din(tx_fifo_din),
        .tx_fifo_wr_en(tx_fifo_wr_en),
        .tx_fifo_full(tx_fifo_full)

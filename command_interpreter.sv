@@ -19,7 +19,7 @@ module command_interpreter(
 typedef enum logic [1:0] {
     IDLE,
     PROCESS,
-    NEXT
+    WAIT_EMPTY
 } state_t;
 
 state_t state;
@@ -66,11 +66,12 @@ always @(posedge clk) begin
                     unknown_command <= received_data;
                 end
             endcase
-            state <= NEXT;
-        end
-        NEXT: begin
             rx_fifo_rd_en <= 1'b1;
-            state <= IDLE;
+            state <= WAIT_EMPTY;
+        end
+        WAIT_EMPTY: begin
+            if(rx_fifo_empty)
+                state <= IDLE;
         end
         default:
             state <= IDLE;
